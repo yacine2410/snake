@@ -41,8 +41,8 @@ snake_body = [
 
 # fruit position
 fruit_position = [
-    random.randrange(1, (window_x//10) * 10),
-    random.randrange(1, 10 * (window_y//10))
+    random.randrange(1, window_x//10) * 10,
+    random.randrange(1, window_y//10) * 10
     ]
 fruit_spawn = True
 
@@ -113,13 +113,13 @@ while True:
 
     #moving the snake
     if direction == "UP":
-        snake_position[1] -= 10
+        snake_position[1] -= 10 #y axis
     if direction == "DOWN":
-        snake_position[1] += 10
+        snake_position[1] += 10 #y axis
     if direction == "LEFT":
-        snake_position[0] -= 10
+        snake_position[0] -= 10 #x axis
     if direction == "RIGHT":
-        snake_position[0] += 10
+        snake_position[0] += 10 #x axis
 
     #growing mechanism
     #if fruits and snake collide: score increments by 10
@@ -132,8 +132,8 @@ while True:
 
     if not fruit_spawn:
         fruit_position = [
-            random.randrange(1, (window_x//10) * 10),
-            random.randrange(1 , (window_y//10)*10)
+            random.randrange(1, window_x//10) * 10,
+            random.randrange(1 , window_y//10) * 10
             ]
     fruit_spawn = True
     game_window.fill(black)
