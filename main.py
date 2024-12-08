@@ -5,10 +5,11 @@ import pygame
 import time
 import random 
 
-# choose difficulty 0 or 1: medium or hard
-# Medium: Just Apples
-# Hard: Higer Speed, Mines + Apples in tougher places
-# Diffculty: {0, 1}
+# choose difficulty 0 or 1 or 2: easy, medium or hard
+# easy: Just Apples
+# medium: Higer Speed, Mines + Apples in tougher places
+# hard: Even higher Speed, Up to 5 mines at a time + disappearing apples after a few seconds
+# Diffculty: {0, 1, 2}
 # Rules: don't pass a wall or bite the snake
 
 def main_menu(): 
@@ -24,28 +25,35 @@ def main_menu():
         game_window.blit(title, (window_x // 4, window_y // 6))
 
         easy_mode_text = menu_font.render("1. Easy Mode: Slower speed, just random fruits.", True, green)
-        hard_mode_text = menu_font.render("2. Hard Mode: Faster speed, includes mines!", True, red)
+        medium_mode_text = menu_font.render("2. Medium Mode: Faster speed, includes mines!", True, blue)
+        hard_mode_text = menu_font.render("2. Hard Mode: Faster speed and multiple mines!", True, red)
         rules_text = menu_font.render("Rules: Avoid walls, don't bite yourself!", True, white)
 
         game_window.blit(easy_mode_text, (window_x // 6, window_y // 3))
-        game_window.blit(hard_mode_text, (window_x // 6, window_y // 3 + 40))
-        game_window.blit(rules_text, (window_x // 6, window_y // 3 + 80))
+        game_window.blit(medium_mode_text, (window_x // 6, window_y // 3 + 40))
+        game_window.blit(hard_mode_text, (window_x // 6, window_y // 3 + 80))
+        game_window.blit(rules_text, (window_x // 6, window_y // 3 + 120))
 
         pygame.display.flip()
 
         for event in pygame.event.get():
+        
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
 
             if event.type == pygame.KEYDOWN:
                 print(f"Key pressed: {event.key}")  # Debugging output
-                if event.key == pygame.K_1 or event.key == 49:  # Add numeric code for `1`
+                if event.key == pygame.K_1 or event.key == 49: 
                     difficulty_level = 0
                     print("Difficulty set to Easy")
                     return
-                elif event.key == pygame.K_2 or event.key == pygame.K_KP2 or event.key == 50:  # Add numeric code for `2`
+                elif event.key == pygame.K_2 or event.key == pygame.K_KP2 or event.key == 50: 
                     difficulty_level = 1
+                    print("Difficulty set to Medium")
+                    return
+                elif event.key == pygame.K_3 or event.key == pygame.K_KP3 or event.key == 50: 
+                    difficulty_level = 2
                     print("Difficulty set to Hard")
                     return
                 else:
@@ -54,16 +62,27 @@ def main_menu():
         pygame.time.delay(100)
 
 
-def generate_mine() -> [int]:  
+def generate_mine():  
     global difficulty_level, fruit_position, mine_position, snake_body
     #generate a mine not on the snake body or the fruit
-    while True:
+    while True and difficulty_level == 1:
         mine = [
             random.randrange(1, window_x // 10) * 10, 
             random.randrange(1, window_y // 10) * 10
             ]
         if mine not in snake_body and mine != fruit_position:
             return mine
+
+    while True and difficulty_level == 2:
+        mine = []
+        for i in range(random.randint(1, 10)):
+            oneMine = [
+                    random.randrange(1, window_x // 10) * 10, 
+                    random.randrange(1, window_y // 10) * 10
+                ]
+            if oneMine not in snake_body and oneMine != fruit_position:
+                mine.append(oneMine)
+        return mine
 
 def generate_fruit() -> [int]:
     global difficulty_level, snake_position, fruit_position, mine_position, snake_body
@@ -75,7 +94,7 @@ def generate_fruit() -> [int]:
             random.randrange(2, window_y // 10 - 1) * 10
             ]
 
-    if difficulty_level == 1: 
+    if difficulty_level >= 1: 
         randInt = random.randint(0, 7)
         #randInt will be between 0 and 7
         #if it's smaller or equal to 5: generate apple randomly
@@ -194,8 +213,14 @@ def play_time():
 
         # growing mechanism
         # if fruits and snake collide: score increments by 10
+        possible_positions = [
+            fruit_position,
+            [fruit_position[0] + 10, fruit_position[1]],
+            [fruit_position[0] + 10, fruit_position[1] + 10],
+            [fruit_position[0], fruit_position[1] + 10]
+        ]
         snake_body.insert(0, list(snake_position))
-        if snake_position == fruit_position:
+        if snake_position in possible_positions:
             score += 10
             fruit_spawn = False
         else:
@@ -203,7 +228,7 @@ def play_time():
 
         if not fruit_spawn:
             fruit_position = generate_fruit()
-            if difficulty_level == 1:
+            if difficulty_level >= 1:
                 mine_position = generate_mine()
                 mine_spawn = True
 
@@ -212,13 +237,18 @@ def play_time():
 
         if difficulty_level == 1 and mine_spawn:
             pygame.draw.rect(game_window, red, pygame.Rect(mine_position[0], mine_position[1], 10, 10))
+        
+        if difficulty_level == 2 and mine_spawn:
+            for mine in mine_position:
+                pygame.draw.rect(game_window, red, pygame.Rect(mine[0], mine[1], 10, 10))
+
 
         # draw snake
         for pos in snake_body:
             pygame.draw.rect(game_window, green, pygame.Rect(pos[0], pos[1], 10, 10))
 
         # draw fruit & mine
-        pygame.draw.rect(game_window, white, pygame.Rect(fruit_position[0], fruit_position[1], 10, 10))
+        pygame.draw.rect(game_window, white, pygame.Rect(fruit_position[0], fruit_position[1], 20, 20))
 
 
         # game over conditions
@@ -234,9 +264,14 @@ def play_time():
                 game_over()
 
         #snake lands on mine
-        if difficulty_level >= 1:
+        if difficulty_level == 1:
             if snake_position == mine_position:
                 game_over()
+
+        if difficulty_level == 2:
+            for mine in mine_position:
+                if snake_position == mine:
+                    game_over()
 
         show_score(1, white, "times new roman", 20)
         pygame.display.update()
@@ -244,7 +279,7 @@ def play_time():
 
 if __name__ == "__main__":
     #speed
-    snake_speed = [15, 20]
+    snake_speed = [15, 20, 25]
 
     #GUI Dimensions
     window_x = 720
