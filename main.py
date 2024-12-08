@@ -6,13 +6,13 @@ import time
 import random 
 
 # choose difficulty 0 or 1: medium or hard
-# Medium: Slow, Just Apples
-# Hard: Medium Speed, Mines + Apples in tougher places
+# Medium: Just Apples
+# Hard: Higer Speed, Mines + Apples in tougher places
 # Diffculty: {0, 1}
+# Rules: don't pass a wall or bite the snake
 
 def main_menu(): 
     global difficulty_level
-
     pygame.init()
     menu_font = pygame.font.SysFont("times new roman", 30)
 
@@ -72,8 +72,8 @@ def generate_fruit() -> [int]:
     #and snake length and position
     if difficulty_level == 0 or len(snake_body) < 10:
         return [
-            random.randrange(1, window_x // 10) * 10, 
-            random.randrange(1, window_y // 10) * 10
+            random.randrange(2, window_x // 10 - 1) * 10, 
+            random.randrange(2, window_y // 10 - 1) * 10
             ]
 
     if difficulty_level == 1: 
@@ -84,8 +84,8 @@ def generate_fruit() -> [int]:
         #if it's 2: generate the snake near the border
         if randInt <= 5:
             return [
-                random.randrange(1, window_x // 10) * 10,
-                random.randrange(1, window_y // 10) * 10
+                random.randrange(2, window_x // 10 - 1) * 10,
+                random.randrange(2, window_y // 10 - 1) * 10
                 ]
 
         if randInt == 6:
@@ -106,23 +106,23 @@ def generate_fruit() -> [int]:
             randInt = random.randint(0,3)
             if randInt == 0:
                 return [
-                    random.randrange(1, 6) * 10,
-                    random.randrange(1, window_y // 10) * 10
+                    random.randrange(2, 6) * 10,
+                    random.randrange(2, window_y // 10 - 1) * 10
                 ]
             if randInt == 1:
                 return [
-                    random.randrange(window_x // 10 - 6, window_x // 10) * 10,
-                    random.randrange(1, window_y // 10) * 10
+                    random.randrange(window_x // 10 - 6, window_x // 10 - 1) * 10,
+                    random.randrange(2, window_y // 10) * 10
                 ]
             if randInt == 2:
                 return [
-                    random.randrange(1, window_x // 10) * 10,
-                    random.randrange(1, 6) * 10
+                    random.randrange(2, window_x // 10 - 1) * 10,
+                    random.randrange(2, 6) * 10
                 ]
             if randInt == 3:
                 return [
-                    random.randrange(1, window_x // 10) * 10,
-                    random.randrange(window_y // 10 - 6, window_y // 10) * 10
+                    random.randrange(2, (window_x // 10) - 1) * 10,
+                    random.randrange(window_y // 10 - 6, window_y // 10 - 1) * 10
                 ]
 
 def show_score(choice, color, font, size):
@@ -157,8 +157,6 @@ def game_over():
     pygame.quit() #deactivate pygame
     quit() #quit program
 
-# Add mines + game_over on mine impact
-# change the way apples generate to using the function
 def play_time():
     global mine_spawn, change_to, direction, window_x, window_y, snake_body, snake_position, snake_speed, fruit_position, fruit_spawn, score, mine_position, difficulty_level
     while True:
