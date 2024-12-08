@@ -56,8 +56,7 @@ def main_menu():
 
 def generate_mine() -> [int]:  
     global difficulty_level, fruit_position, mine_position, snake_body
-    #generates a mine according to difficulty level
-    #and snake length and position
+    #generate a mine not on the snake body or the fruit
     while True:
         mine = [
             random.randrange(1, window_x // 10) * 10, 
@@ -78,10 +77,10 @@ def generate_fruit() -> [int]:
 
     if difficulty_level == 1: 
         randInt = random.randint(0, 7)
-        #randInt will either be 0 or 1 or 2
-        #if it's 0: generate apple randomly
-        #if it's 1: generate apple near the snake body
-        #if it's 2: generate the snake near the border
+        #randInt will be between 0 and 7
+        #if it's smaller or equal to 5: generate apple randomly
+        #if it's 6: generate apple near the snake body
+        #if it's 7: generate the snake near the border
         if randInt <= 5:
             return [
                 random.randrange(2, window_x // 10 - 1) * 10,
@@ -301,16 +300,3 @@ if __name__ == "__main__":
     
     main_menu()
     play_time()
-
-
-
-
-            
-
-
-    
-
-
-
-
-
