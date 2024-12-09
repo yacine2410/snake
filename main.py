@@ -104,7 +104,7 @@ def get_state():
         state.append(0)  # No mines, so no need for proximity checks
     
     # Ensure the state is a fixed length of 12
-    return np.array(state[:12], dtype=int)
+    return np.array(state, dtype=int)
 
 def make_move(action):
     global direction
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     black, red, white, green = (0, 0, 0), (255, 0, 0), (255, 255, 255), (0, 255, 0)
 
     reset_game()
-    state_shape = (12,)
+    state_shape = (13,)
     action_space = 4
 
     # Initialize epsilon for exploration strategy
