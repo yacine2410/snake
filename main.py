@@ -5,11 +5,13 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
 from queue import PriorityQueue
 
-# Helper functions
+# game-play functions
 def generate_mine():
     global difficulty_level, fruit_position, mine_position, snake_body
+
     if difficulty_level == 0:
         return None
+
     if difficulty_level == 1:
         while True:
             mine = [
@@ -18,6 +20,7 @@ def generate_mine():
             ]
             if mine not in snake_body and mine != fruit_position:
                 return mine
+
     if difficulty_level == 2:
         mines = []
         for _ in range(random.randint(1, 5)):  # Up to 5 mines
@@ -29,6 +32,7 @@ def generate_mine():
                 if mine not in snake_body and mine != fruit_position:
                     mines.append(mine)
                     break
+
         return mines
 
 def generate_fruit():
@@ -47,14 +51,15 @@ def show_score(color, font, size):
     game_window.blit(score_surface, score_rect)
 
 def calculate_reward():
-    global snake_position, fruit_position
-    reward = -0.1  # Small penalty for each step
+    global snake_position, fruit_position, mine_position
+
+    reward = -0.1  #small step penalty
     
-    # Reward for eating fruit
+    #fruit eating reward
     if snake_position == fruit_position:
-        return reward + 20, True  # Increased reward for eating fruit
+        return reward + 20, True
     
-    # Penalize collisions with walls or self or mines
+    #penalties for colliding with walls, mines or self(snake)
     if (snake_position in snake_body[1:] or 
         snake_position[0] < 0 or 
         snake_position[1] < 0 or 
@@ -63,27 +68,43 @@ def calculate_reward():
         (mine_position and snake_position in (mine_position if isinstance(mine_position, list) else [mine_position]))):
         return -10, False
 
+    #mine proximity penalty if there are mines
+    if isinstance(mine_position, list):
+        for mine in mine_position:
+            if abs(snake_position[0] - mine[0]) < 20 and abs(snake_position[1] - mine[1]) < 20:
+                reward -= 5  #penalty for going near mine
+    
     return reward, False
 
+#state transfer
 def get_state():
-    global snake_position, fruit_position
+    global snake_position, fruit_position, mine_position
     
     state = [
-        snake_position[0] < fruit_position[0],  
-        snake_position[0] > fruit_position[0],  
-        snake_position[1] < fruit_position[1],  
-        snake_position[1] > fruit_position[1],  
-        snake_position[0] <= 0,                 
-        snake_position[0] >= window_x - 10,     
-        snake_position[1] <= 0,                 
-        snake_position[1] >= window_y - 10,     
-        any(block == [snake_position[0] - 10, snake_position[1]] for block in snake_body),  
-        any(block == [snake_position[0] + 10, snake_position[1]] for block in snake_body),  
-        any(block == [snake_position[0], snake_position[1] - 10] for block in snake_body),  
-        any(block == [snake_position[0], snake_position[1] + 10] for block in snake_body),  
+        snake_position[0] < fruit_position[0],  # Is snake to the left of the fruit?
+        snake_position[0] > fruit_position[0],  # Is snake to the right of the fruit?
+        snake_position[1] < fruit_position[1],  # Is snake above the fruit?
+        snake_position[1] > fruit_position[1],  # Is snake below the fruit?
+        snake_position[0] <= 0,  # Is snake at the left boundary?
+        snake_position[0] >= window_x - 10,  # Is snake at the right boundary?
+        snake_position[1] <= 0,  # Is snake at the top boundary?
+        snake_position[1] >= window_y - 10,  # Is snake at the bottom boundary?
+        any(block == [snake_position[0] - 10, snake_position[1]] for block in snake_body),  # Is there a body block to the left?
+        any(block == [snake_position[0] + 10, snake_position[1]] for block in snake_body),  # Is there a body block to the right?
+        any(block == [snake_position[0], snake_position[1] - 10] for block in snake_body),  # Is there a body block above?
+        any(block == [snake_position[0], snake_position[1] + 10] for block in snake_body),  # Is there a body block below?
     ]
     
-    return np.array(state, dtype=int)
+    # Check if any mine exists within proximity
+    if isinstance(mine_position, list):
+        # Check if snake is near any mine
+        near_mine = any(abs(snake_position[0] - mine[0]) < 20 and abs(snake_position[1] - mine[1]) < 20 for mine in mine_position)
+        state.append(near_mine)  # Add 1 if near a mine, 0 otherwise
+    else:
+        state.append(0)  # No mines, so no need for proximity checks
+    
+    # Ensure the state is a fixed length of 12
+    return np.array(state[:12], dtype=int)
 
 def make_move(action):
     global direction
@@ -124,9 +145,10 @@ def a_star_pathfinding(start, goal):
         neighbors = [(current[0]+dx, current[1]+dy) for dx, dy in [(10,0), (-10,0), (0,-10), (0,10)]]
         
         for neighbor in neighbors:
-            # Check boundaries and obstacles
+            # Check boundaries, walls, and mines
             if (neighbor not in snake_body and 
                 neighbor != fruit_position and 
+                (not isinstance(mine_position, list) or neighbor not in mine_position) and 
                 neighbor[0] >= 0 and neighbor[0] < window_x and 
                 neighbor[1] >= 0 and neighbor[1] < window_y):
                 
@@ -141,7 +163,7 @@ def a_star_pathfinding(start, goal):
     return []  # Return empty if no path found
 
 def play_game(action):
-    global snake_position, snake_body, fruit_position, score, fruit_spawn
+    global snake_position, snake_body, fruit_position, score, fruit_spawn, mine_position
 
     make_move(action)
 
@@ -180,25 +202,20 @@ def play_game(action):
 
     return get_state(), reward, done
 
+
 def reset_game():
-    global snake_position, snake_body, fruit_position, mine_position, score, direction, fruit_spawn
-    global apples_eaten
-    
-    apples_eaten = 0   # Reset apples eaten count at the start of each game
-    
-    # Initialize game state
+    global snake_position, snake_body, fruit_position, direction, score, fruit_spawn, apples_eaten, mine_position
     snake_position = [100, 50]
-    snake_body = [[100, 50], [90, 50], [80, 50], [70, 50]]
-    
-    fruit_position = generate_fruit()
-    
-    mine_position = generate_mine()
-    
+    snake_body = [[100, 50], [90, 50], [80, 50]]
     direction = "RIGHT"
-    
+    fruit_position = generate_fruit()
     fruit_spawn = True
-    
+    if difficulty_level > 0:
+        mine_position = generate_mine()
     score = 0
+    apples_eaten = 0
+    mine_position = generate_mine()
+
 
 def train_step(model, state, action, reward, next_state, done):
     state = np.array(state).reshape(1,-1)  
